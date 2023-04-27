@@ -1,0 +1,130 @@
+/*
+Copyright (c) 2023, Aron Durkin
+All rights reserved.
+
+This source code is licensed under the BSD-style license found in the
+LICENSE file in the root directory of this source tree.
+*/
+
+// TODO: Make the input connection button smaller
+
+global proc AEstringFormatTemplate(string $nodeName){
+    
+    editorTemplate -beginScrollLayout;
+    
+        editorTemplate -beginLayout "Formatting" -collapse false;
+        
+            editorTemplate -addControl "input";
+            editorTemplate -callCustom "AEstringFormat_New" "AEstringFormat_Replace" "prefix";
+            editorTemplate -callCustom "AEstringFormat_New" "AEstringFormat_Replace" "suffix";
+            editorTemplate -addControl "output";
+            
+        editorTemplate -endLayout;
+        
+    editorTemplate -endScrollLayout;
+    
+    editorTemplate -suppress "frozen";
+    editorTemplate -suppress "caching";
+	editorTemplate -suppress "nodeState";
+}
+
+
+proc string GetAttrNameFromAttr(string $attr){
+    string $buffer[];
+    tokenize $attr "." $buffer;
+    string $attrName = $buffer[1];
+    return $attrName;
+}
+
+
+global proc AEstringFormat_New(string $attr){
+    
+    string $currentParent = (`setParent -q`);
+
+    string $attrName = GetAttrNameFromAttr($attr);
+        
+    string $attr_value = `getAttr $attr`;
+    
+    string $attr_label = capitalizeString($attrName);
+
+    string $textFieldGrp = `textFieldGrp -label $attr_label -text $attr_value`;
+    
+    string $textChangeCommand = ("AEstringFormat_SetAttr_From_textFieldGrp " + $attr + " " + $textFieldGrp);
+
+    textFieldGrp -edit -textChangedCommand $textChangeCommand $textFieldGrp;
+    
+    setParent..;
+        
+    AEstringFormat_Setup_ScriptJobs($attr, $textFieldGrp);
+}
+
+
+global proc AEstringFormat_Replace(string $attr){
+    
+    string $currentParent = (`setParent -q`);
+    string $childArray[] = `layout -query -childArray $currentParent`;
+    string $textFieldGrp = $childArray[0];
+    
+    // for the textFieldGrp in the attr editor we need to update the change command with 
+    // the new attribute BEFORE we update the text or it'll trigger thange command and overwrite the wrong attr
+    string $textChangeCommand = ("AEstringFormat_SetAttr_From_textFieldGrp " + $attr + " " + $textFieldGrp);
+    
+    textFieldGrp -edit -textChangedCommand $textChangeCommand $textFieldGrp;
+        
+    textFieldGrp -edit -text `getAttr $attr` $textFieldGrp;
+    
+    AEstringFormat_Setup_ScriptJobs($attr, $textFieldGrp);
+}
+
+
+global proc AEstringFormat_SetAttr_From_textFieldGrp(string $attr, string $textFieldGrp){
+                
+    if (`textFieldGrp -exists $textFieldGrp` && `objExists $attr`){
+        
+        string $textFieldValue = `textFieldGrp -q -text $textFieldGrp`;
+        
+        string $attr_value = `getAttr $attr`;
+        
+        if ($textFieldValue != $attr_value){
+            setAttr -type "string" $attr $textFieldValue;
+        }
+    }
+}
+
+
+global proc AEstringFormat_Set_textFieldGrp_From_Attr(string $attr, string $textFieldGrp){
+                
+    if (`textFieldGrp -exists $textFieldGrp` && `objExists $attr`){
+        
+        string $textFieldValue = `textFieldGrp -q -text $textFieldGrp`;
+        
+        string $attr_value = `getAttr $attr`;
+        
+        if ($textFieldValue != $attr_value){
+            textFieldGrp -edit -text $attr_value $textFieldGrp; 
+        }
+    }
+}
+
+
+global proc AEstringFormat_Setup_ScriptJobs(string $attr, string $textFieldGrp){
+
+    string $attributeChange_command = ("AEstringFormat_Set_textFieldGrp_From_Attr " + $attr + " " + $textFieldGrp);   
+
+    int $scriptJob = `scriptJob
+        -replacePrevious
+        -parent $textFieldGrp
+        -attributeChange $attr $attributeChange_command`;        
+}
+
+
+//refreshEditorTemplates;
+
+/*
+createNode "stringFormat";
+getAttr "stringFormat1.prefix";
+setAttr -type "string" "stringFormat6.suffix" "testorino";
+*/
+
+
+
