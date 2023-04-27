@@ -19,7 +19,7 @@ def maya_useNewAPI():
     pass
 
 # Plug-in information:
-VENDOR_ID = "Super Spline Studios Ltd"
+VENDOR_ID = "Aron Durkin"
 PLUGIN_VERSION = "1.0.0"
 
 NODE_TYPE_NAME = "stringFormat" # The name of the node.
