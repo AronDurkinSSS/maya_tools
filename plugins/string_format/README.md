@@ -11,3 +11,5 @@ Inputs:
 
 Outputs:   
     **output/o** (str): The value as a string, with the prefix and suffix.
+
+![Attribute Editor for stringFormat node](/string_format.png "Optional title")
